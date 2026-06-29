@@ -1,99 +1,69 @@
-# CS-350 Emerging Systems Architectures & Technologies: Module Eight Journal
+# CS-350 Module Eight Journal
 
 **Justin Guida**
 CS-350-14294-M01 | Emerging Systems Architectures & Technologies | 2026 C-3 (May – Jun)
 Southern New Hampshire University
 
----
+## Artifacts
 
-## Artifacts in this repository
+| # | Artifact | Deliverable | Folder |
+|---|----------|-------------|--------|
+| 1 | Morse Code Button/LED State Machine | 5-1 Milestone Three: Input With Buttons Lab | [`artifacts/01-milestone-three-buttons-lab/`](artifacts/01-milestone-three-buttons-lab/) |
+| 2 | Raspberry Pi Smart Thermostat | 7-1 Final Project | [`artifacts/02-thermostat-final-project/`](artifacts/02-thermostat-final-project/) |
 
-| # | Artifact | Course deliverable | Location |
-|---|----------|--------------------|----------|
-| 1 | **Morse Code Button/LED State Machine** | 5-1 Milestone Three: Input With Buttons Lab | [`artifacts/01-milestone-three-buttons-lab/`](artifacts/01-milestone-three-buttons-lab/) |
-| 2 | **Raspberry Pi Smart Thermostat** | 7-1 Final Project | [`artifacts/02-thermostat-final-project/`](artifacts/02-thermostat-final-project/) |
+## What the projects were
 
----
+The buttons lab was about driving real hardware from code on a Raspberry Pi. The board blinks a red
+and blue LED to send a message in Morse code, prints status to a 16x2 LCD, and switches the message
+between SOS and OK when you press a button. The actual lesson was modeling timed behavior as a state
+machine (`off → dot → dash → pauses`) and getting the timing right (500 ms dots, 1500 ms dashes, and
+the gaps in between) while still reacting to a button press on a separate thread.
 
-## Project Summaries: What problem was each solving?
+The final project was a smart thermostat, which is basically a small connected product. It reads
+temperature from an AHT20 sensor over I2C, cycles through OFF / HEAT / COOL with three buttons, shows
+state on the LCD, fades red/blue PWM LEDs depending on how far the temperature is from the set point,
+and ships a `state,temp,setpoint` message out over UART so a server could read it. Take in sensor
+data, run it through a control loop, output something for both a human and a machine.
 
-**Artifact 1: Input With Buttons Lab (Milestone Three).** This milestone asked me to drive
-hardware from software on a Raspberry Pi: blink red and blue LEDs to transmit a message in Morse
-code, show status on a 16x2 LCD, and toggle the transmitted message between **SOS** and **OK** when a
-button is pressed. The real problem it solved was learning to model timed, event-driven hardware
-behavior as a **finite state machine** (`off → dot → dash → dotDashPause → letterPause →
-wordPause`) with strict timing (500 ms dots, 1500 ms dashes, and the 250/750/3000 ms pauses
-between symbols, letters, and words) while still responding to asynchronous button input on a
-separate thread.
+## What went well
 
-**Artifact 2: Smart Thermostat (Final Project).** The final project simulated a real embedded
-product: a thermostat that reads temperature from an **AHT20 sensor over I2C**, lets the user cycle
-modes and adjust a set point with three buttons, shows state on the LCD, drives red/blue **PWM LEDs**
-to indicate heating/cooling effort, and reports status to a server over **UART** as
-`state,current_temperature,set_point`. The core problem was the same kind of problem real
-connected devices solve: take noisy sensor input, run it through a deterministic control loop
-(`OFF → HEAT → COOL`), and produce both human-facing output (LCD/LEDs) and machine-facing output
-(UART), all on constrained hardware.
+The thing I'm happiest with is that I kept the thermostat's decision-making separate from the
+hardware. All the logic lives in `controller.py` as small functions over a frozen `ThermostatState`
+dataclass, so it never touches a GPIO pin directly. That meant I could actually unit test it on my
+laptop with no Pi plugged in, which is the kind of setup I lean on in my own CI/CD work anyway, where
+the goal is to catch problems before anything ships. On the buttons lab I'm happy with the timing,
+the dot/dash/letter/word pauses came out clean and the button stayed responsive because the Morse
+output runs on its own thread.
 
-## What did I do particularly well?
+## What I'd improve
 
-I'm most proud of how cleanly I separated **control logic from hardware** in the thermostat. The
-decision-making lives in [`controller.py`](artifacts/02-thermostat-final-project/thermostat/controller.py)
-as small **pure functions** over an immutable `@dataclass(frozen=True)` `ThermostatState`
-(`apply_button_events`, `record_temperature`, `determine_led_action`). Because that logic never
-touches a GPIO pin directly, I could prove it correct with ordinary unit tests
-([`tests/test_controller.py`](artifacts/02-thermostat-final-project/tests/test_controller.py)) on
-my laptop without any Raspberry Pi attached. In the buttons lab I did the timing-critical Morse
-state machine well, getting the symbol/letter/word pauses right and keeping the button responsive
-by running the transmission on its own thread.
+The Milestone Three code creates its LEDs, LCD, and pins at the top of the class, so it assumes the
+real board is there and is harder to test than the thermostat ended up being. If I went back I'd do
+what the final project taught me and hide the hardware behind a thin layer so the logic stays pure
+and testable. I'd also handle flaky I2C reads better and swap some of the `sleep` timing for a real
+scheduler so a long transmission doesn't drift.
 
-## Where could I improve?
+## Tools and resources I'm keeping
 
-In the Milestone Three code, hardware objects (LEDs, the LCD, GPIO pins) are created at module/class
-scope, which makes that artifact harder to unit-test than the final project, since it assumes the real
-board is present. If I revisited it, I'd apply the same lesson the thermostat taught me: push the
-hardware behind a thin adapter and keep the state-machine logic pure. I'd also add more defensive
-handling around I2C reads (transient sensor errors) and replace remaining `sleep`-based timing with
-a more precise scheduler so long-running transmissions don't drift.
-
-## Tools and resources I'm adding to my support network
-
-- **`python-statemachine` and `gpiozero`/`adafruit-blinka`** libraries for modeling embedded
-  behavior and talking to GPIO, I2C, and character LCDs.
-- **The state-machine diagram workflow** (Mermaid + a design doc, see
-  [`docs/CS350_Thermostat_State_Machine.md`](artifacts/02-thermostat-final-project/docs/CS350_Thermostat_State_Machine.md))
-  so the design is documented *before* and alongside the code.
-- **`unittest` and `compileall`** as a lightweight validation gate I can run before every commit.
-- Vendor and community references such as Raspberry Pi GPIO docs, Adafruit CircuitPython guides, and
-  the AHT20 datasheet, which I'll keep relying on for future hardware projects.
+`gpiozero`, `python-statemachine`, and the Adafruit/Blinka stack for talking to GPIO, I2C, and the
+LCD. Sketching the state machine first (Mermaid diagram plus a short design doc in `docs/`) before
+writing code, since it caught edge cases early. And running `unittest` and `compileall` as a quick
+gate before every commit. That last habit lines up directly with the CI/CD tooling I build on my own
+time, so it's something I'll keep using outside class.
 
 ## Transferable skills
 
-The biggest transferable skill is **modeling a problem as a finite state machine** and keeping the
-"what to do" (pure logic) separate from the "how to do it" (I/O and hardware). That separation, plus
-**writing unit tests against the logic layer**, applies to almost any software, not just embedded.
-I'm also taking away comfort with **communication protocols** (I2C, UART, GPIO/PWM) and reading
-hardware against requirements, which transfers directly to IoT, robotics, and any
-hardware-adjacent work.
+The big one is modeling a problem as a state machine and keeping the "what to do" separate from the
+"how to do it." That split plus testing the logic layer applies to almost anything, not just
+embedded work. It actually overlaps with what I care about in AI governance and agent safety: a
+deterministic core you can verify is a lot easier to trust than logic tangled up with side effects.
+I'm also taking away comfort with I2C, UART, and GPIO/PWM, which carries over to IoT and robotics.
 
-## How I made the work maintainable, readable, and adaptable
+## Maintainable, readable, adaptable
 
-- **Maintainable:** The thermostat is a real Python package split by responsibility:
-  [`config.py`](artifacts/02-thermostat-final-project/thermostat/config.py) (pins/timing/UART
-  settings), [`controller.py`](artifacts/02-thermostat-final-project/thermostat/controller.py)
-  (pure logic), [`hardware.py`](artifacts/02-thermostat-final-project/thermostat/hardware.py)
-  (device adapters), [`uart.py`](artifacts/02-thermostat-final-project/thermostat/uart.py)
-  (messaging), and [`app.py`](artifacts/02-thermostat-final-project/thermostat/app.py) (the runtime
-  loop). Unit tests guard the logic so changes are safe.
-- **Readable:** Type hints (`Mode`, `LedAction` literals), an immutable state object, descriptive
-  function names, consistent comments, and a documented state diagram make intent obvious.
-- **Adaptable:** Because pins, timing, and the set point default live in `config.py`, the board can
-  be rewired or retuned without touching logic. The hardware adapter boundary means a different
-  sensor or display could be dropped in by changing one module, and new modes would be a small,
-  localized change to the controller. A backward-compatible `Thermostat.py` entry point keeps the
-  original run command working even after the refactor into a package.
-
----
-
-*This README serves as my Module Eight Journal reflection and as the landing page for the two
-CS-350 artifacts archived in this repository.*
+The thermostat is split into real modules by job: `config.py` (pins, timing, UART), `controller.py`
+(logic), `hardware.py` (device adapters), `uart.py` (messaging), and `app.py` (the loop). Because
+the pins and timing live in `config.py`, you can rewire or retune the board without touching the
+logic, and swapping the sensor or display is a one-module change. Type hints, an immutable state
+object, and the state diagram keep it readable, and the original `Thermostat.py` still works as an
+entry point even after I refactored it into a package.
