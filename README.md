@@ -55,8 +55,10 @@ time, so it's something I'll keep using outside class.
 
 The big one is modeling a problem as a state machine and keeping the "what to do" separate from the
 "how to do it." That split plus testing the logic layer applies to almost anything, not just
-embedded work. It actually overlaps with what I care about in AI governance and agent safety: a
-deterministic core you can verify is a lot easier to trust than logic tangled up with side effects.
+embedded work. Most of my projects outside class are some mix of CI/CD tooling and AI governance, and
+both of those come back to the same idea: a deterministic core you can actually verify is way easier
+to trust than logic tangled up with side effects, and it's way easier to wrap a pipeline around. The
+thermostat is a small example of that, but it's the same instinct I bring to the bigger stuff I build.
 I'm also taking away comfort with I2C, UART, and GPIO/PWM, which carries over to IoT and robotics.
 
 ## Maintainable, readable, adaptable
