@@ -25,6 +25,56 @@ state on the LCD, fades red/blue PWM LEDs depending on how far the temperature i
 and ships a `state,temp,setpoint` message out over UART so a server could read it. Take in sensor
 data, run it through a control loop, output something for both a human and a machine.
 
+## State machines
+
+Both artifacts are state machines at heart, so here's what each one actually does.
+
+**Thermostat (final project).** The mode button cycles OFF → HEAT → COOL → OFF, and the up/down
+buttons nudge the set point in any mode without changing which mode you're in.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> OFF : startup
+    OFF --> HEAT : mode button
+    HEAT --> COOL : mode button
+    COOL --> OFF : mode button
+    OFF --> OFF : up / down
+    HEAT --> HEAT : up / down
+    COOL --> COOL : up / down
+```
+
+Inside HEAT and COOL the LEDs react to how far the current temperature is from the set point:
+
+```mermaid
+flowchart TD
+    A[mode + temp + set point] --> B{mode?}
+    B -->|off| C[both LEDs off]
+    B -->|heat| D{temp below set point?}
+    B -->|cool| E{temp above set point?}
+    D -->|yes| F[red LED fades]
+    D -->|no| G[red LED solid]
+    E -->|yes| H[blue LED fades]
+    E -->|no| I[blue LED solid]
+```
+
+**Buttons lab (Milestone Three).** A Morse machine that walks symbol by symbol and toggles the
+message between SOS and OK when the button is pressed.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> off
+    off --> dot : red 500 ms
+    off --> dash : blue 1500 ms
+    dot --> dotDashPause : 250 ms
+    dash --> dotDashPause : 250 ms
+    dotDashPause --> letterPause : 750 ms
+    letterPause --> wordPause : 3000 ms
+    wordPause --> off
+    off --> off : button toggles SOS / OK
+```
+
 ## What went well
 
 The thing I'm happiest with is that I kept the thermostat's decision-making separate from the
