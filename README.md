@@ -29,50 +29,58 @@ data, run it through a control loop, output something for both a human and a mac
 
 Both artifacts are state machines at heart, so here's what each one actually does.
 
-**Thermostat (final project).** The mode button cycles OFF → HEAT → COOL → OFF, and the up/down
-buttons nudge the set point in any mode without changing which mode you're in.
+**Thermostat (final project).** The mode button cycles through the three modes. The up/down buttons
+adjust the set point in any mode without changing the mode.
 
 ```mermaid
 stateDiagram-v2
+    accTitle: Thermostat mode state machine
+    accDescr: The mode button cycles OFF to HEAT to COOL and back to OFF. The up and down buttons adjust the set point in any mode without changing the mode.
     direction TB
-    [*] --> OFF : startup
-    OFF --> HEAT : mode button
-    HEAT --> COOL : mode button
-    COOL --> OFF : mode button
-    OFF --> OFF : up / down
-    HEAT --> HEAT : up / down
-    COOL --> COOL : up / down
+    [*] --> OFF
+    OFF --> HEAT : mode
+    HEAT --> COOL : mode
+    COOL --> OFF : mode
+    note right of HEAT
+        Up / Down adjust the
+        set point in any mode
+    end note
 ```
 
-Inside HEAT and COOL the LEDs react to how far the current temperature is from the set point:
+Inside HEAT and COOL the LEDs react to how far the temperature is from the set point.
 
 ```mermaid
 flowchart TD
-    A[mode + temp + set point] --> B{mode?}
-    B -->|off| C[both LEDs off]
-    B -->|heat| D{temp below set point?}
-    B -->|cool| E{temp above set point?}
-    D -->|yes| F[red LED fades]
-    D -->|no| G[red LED solid]
-    E -->|yes| H[blue LED fades]
-    E -->|no| I[blue LED solid]
+    accTitle: LED behavior by mode
+    accDescr: When off both LEDs are off. In heat the red LED fades while below the set point and goes solid once reached. In cool the blue LED fades while above the set point and goes solid once reached.
+    A([mode, temp, set point]) --> B{Mode?}
+    B -->|OFF| C[Both LEDs off]
+    B -->|HEAT| D{Below set point?}
+    B -->|COOL| E{Above set point?}
+    D -->|Yes| F[Red LED fades]
+    D -->|No| G[Red LED solid]
+    E -->|Yes| H[Blue LED fades]
+    E -->|No| I[Blue LED solid]
 ```
 
-**Buttons lab (Milestone Three).** A Morse machine that walks symbol by symbol and toggles the
-message between SOS and OK when the button is pressed.
+**Buttons lab (Milestone Three).** A Morse machine that emits one symbol at a time and pauses
+between symbols, letters, and words. The button toggles the message between SOS and OK.
 
 ```mermaid
 stateDiagram-v2
+    accTitle: Morse code transmission state machine
+    accDescr: From off the machine emits a dot on the red LED or a dash on the blue LED, then enters a pause between symbols, letters, or words before returning to off. The button toggles the message between SOS and OK.
     direction TB
     [*] --> off
-    off --> dot : red 500 ms
-    off --> dash : blue 1500 ms
-    dot --> dotDashPause : 250 ms
-    dash --> dotDashPause : 250 ms
-    dotDashPause --> letterPause : 750 ms
-    letterPause --> wordPause : 3000 ms
-    wordPause --> off
-    off --> off : button toggles SOS / OK
+    off --> dot : dot (red, 500 ms)
+    off --> dash : dash (blue, 1500 ms)
+    dot --> dotDashPause
+    dash --> dotDashPause
+    dotDashPause --> off : 250 ms (next symbol)
+    dotDashPause --> letterPause : end of letter
+    letterPause --> off : 750 ms
+    dotDashPause --> wordPause : end of word
+    wordPause --> off : 3000 ms
 ```
 
 ## What went well
