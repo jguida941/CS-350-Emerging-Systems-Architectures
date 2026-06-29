@@ -34,7 +34,7 @@ buttons nudge the set point in any mode without changing which mode you're in.
 
 ```mermaid
 stateDiagram-v2
-    direction LR
+    direction TB
     [*] --> OFF : startup
     OFF --> HEAT : mode button
     HEAT --> COOL : mode button
@@ -63,7 +63,7 @@ message between SOS and OK when the button is pressed.
 
 ```mermaid
 stateDiagram-v2
-    direction LR
+    direction TB
     [*] --> off
     off --> dot : red 500 ms
     off --> dash : blue 1500 ms
